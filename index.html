@@ -305,6 +305,7 @@
                     <div class="form-group">
                         <label for="durationSelect">Duración del masaje:</label>
                         <select id="durationSelect" class="form-control" onchange="updateAvailableSlots()">
+                            <option value="30">30 minutos</option>
                             <option value="45">45 minutos</option>
                             <option value="60">60 minutos</option>
                             <option value="90">90 minutos</option>
@@ -332,6 +333,7 @@
             <div class="form-group">
                 <label for="appointmentDuration">Duración:</label>
                 <select id="appointmentDuration" class="form-control" onchange="updateModalSlots()">
+                    <option value="30">30 minutos</option>
                     <option value="45">45 minutos</option>
                     <option value="60">60 minutos</option>
                     <option value="90">90 minutos</option>
@@ -347,7 +349,22 @@
             </div>
             <div class="form-group">
                 <label for="serviceType">Tipo de masaje:</label>
-                <input type="text" id="serviceType" class="form-control" placeholder="Ej: Relajante, Deportivo, Terapéutico...">
+                <select id="serviceType" class="form-control" onchange="updateServiceDuration()">
+                    <option value="">Seleccionar servicio</option>
+                    <option value="Masaje Relajante|$35.000|60">Masaje Relajante - $35.000 (60 min)</option>
+                    <option value="Masaje Descontracturante|$35.000|60">Masaje Descontracturante - $35.000 (60 min)</option>
+                    <option value="Masaje Circulatorio de Piernas|$30.000|45">Masaje Circulatorio de Piernas - $30.000 (45 min)</option>
+                    <option value="Masaje Reflex-Manos y Pies|$30.000|45">Masaje Reflex-Manos y Pies - $30.000 (45 min)</option>
+                    <option value="Exfoliación Corporal|$38.000|60">Exfoliación Corporal - $38.000 (60 min)</option>
+                    <option value="Masaje Craneal-Facial|$30.000|45">Masaje Craneal-Facial - $30.000 (45 min)</option>
+                    <option value="Masaje Reiki|$30.000|45">Masaje Reiki - $30.000 (45 min)</option>
+                    <option value="Piedras|$37.000|45">Piedras - $37.000 (45 min)</option>
+                    <option value="Limpieza Facial Express|$30.000|30">Limpieza Facial Express - $30.000 (30 min)</option>
+                </select>
+                <div id="serviceInfo" style="margin-top: 8px; padding: 8px; background: #f0f8ff; border-radius: 5px; display: none;">
+                    <small><strong>Servicio seleccionado:</strong> <span id="serviceName"></span><br>
+                    <strong>Precio:</strong> <span id="servicePrice"></span> | <strong>Duración:</strong> <span id="serviceDuration"></span> min</small>
+                </div>
             </div>
             <div style="display: flex; gap: 15px; margin-top: 30px;">
                 <button class="btn btn-primary" onclick="addAppointment()" style="flex: 1;">Agendar Cita</button>
@@ -476,6 +493,34 @@
             updateModalSlots();
         }
 
+        // Actualizar información del servicio seleccionado
+        function updateServiceDuration() {
+            const serviceSelect = document.getElementById('serviceType');
+            const serviceInfo = document.getElementById('serviceInfo');
+            const serviceName = document.getElementById('serviceName');
+            const servicePrice = document.getElementById('servicePrice');
+            const serviceDuration = document.getElementById('serviceDuration');
+            const durationSelect = document.getElementById('appointmentDuration');
+
+            if (serviceSelect.value) {
+                const [name, price, duration] = serviceSelect.value.split('|');
+                
+                // Mostrar información del servicio
+                serviceInfo.style.display = 'block';
+                serviceName.textContent = name;
+                servicePrice.textContent = price;
+                serviceDuration.textContent = duration;
+                
+                // Actualizar duración automáticamente
+                durationSelect.value = duration;
+                updateModalSlots();
+            } else {
+                serviceInfo.style.display = 'none';
+                durationSelect.value = '60'; // Valor por defecto
+                updateModalSlots();
+            }
+        }
+        
         // Actualizar slots en modal
         function updateModalSlots() {
             const duration = document.getElementById('appointmentDuration').value;
@@ -505,6 +550,7 @@
             document.getElementById('clientName').value = '';
             document.getElementById('clientPhone').value = '';
             document.getElementById('serviceType').value = '';
+            document.getElementById('serviceInfo').style.display = 'none';
         }
 
         // Agregar nueva cita
@@ -513,7 +559,7 @@
             const duration = document.getElementById('appointmentDuration').value;
             const clientName = document.getElementById('clientName').value.trim();
             const clientPhone = document.getElementById('clientPhone').value.trim();
-            const serviceType = document.getElementById('serviceType').value.trim();
+            const serviceValue = document.getElementById('serviceType').value;
 
             if (!time || !clientName) {
                 alert('Por favor completa los campos obligatorios (Horario y Nombre del cliente).');
@@ -525,14 +571,26 @@
                 return;
             }
 
+            let serviceName = '';
+            let servicePrice = '';
+            let serviceDuration = duration;
+
+            if (serviceValue) {
+                const [name, price, dur] = serviceValue.split('|');
+                serviceName = name;
+                servicePrice = price;
+                serviceDuration = dur;
+            }
+
             const appointment = {
                 id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
                 date: selectedDate,
                 time: time,
-                duration: duration,
+                duration: serviceDuration,
                 clientName: clientName,
                 clientPhone: clientPhone,
-                service: serviceType,
+                service: serviceName,
+                price: servicePrice,
                 createdAt: new Date().toISOString()
             };
 
@@ -588,7 +646,8 @@
                                     <strong>👤 ${appointment.clientName}</strong>
                                 </div>
                                 ${appointment.clientPhone ? `<div class="client-info">📞 ${appointment.clientPhone}</div>` : ''}
-                                ${appointment.service ? `<div class="client-info" style="color: #666;">💆 ${appointment.service}</div>` : ''}
+                                ${appointment.service ? `<div class="client-info" style="color: #2196f3; font-weight: bold;">💆 ${appointment.service}</div>` : ''}
+                                ${appointment.price ? `<div class="client-info" style="color: #4caf50; font-weight: bold;">💰 ${appointment.price}</div>` : ''}
                             </div>
                             <button class="btn btn-danger" onclick="cancelAppointment('${appointment.id}')" title="Cancelar cita">
                                 🗑️
